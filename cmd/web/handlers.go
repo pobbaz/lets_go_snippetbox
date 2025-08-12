@@ -8,10 +8,10 @@ import (
 )
 
 // home handler function
-func home(w http.ResponseWriter, r *http.Request) {
+func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	// request url must be exactly "/"
 	if r.URL.Path != "/" {
-		http.NotFound(w, r)
+		app.notFound(w)
 		return
 	}
 
@@ -25,7 +25,7 @@ func home(w http.ResponseWriter, r *http.Request) {
 	ts, err := template.ParseFiles(files...)
 	if err != nil {
 		fmt.Print(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		app.serverError(w, err)
 		return
 	}
 
@@ -33,27 +33,27 @@ func home(w http.ResponseWriter, r *http.Request) {
 	err = ts.ExecuteTemplate(w, "base", nil)
 	if err != nil {
 		fmt.Print(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		app.serverError(w, err)
 	}
 }
 
 // show specific snippet
-func snippetView(w http.ResponseWriter, r *http.Request) {
+func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
 	// get tht id parameter and convert it to integer
 	id, err := strconv.Atoi(r.URL.Query().Get("id"))
 	if err != nil || id < 1 {
-		http.NotFound(w, r)
+		app.notFound(w)
 		return
 	}
 	fmt.Fprintf(w, "Snippet %d", id)
 }
 
 // create a new snippet
-func snippetCreate(w http.ResponseWriter, r *http.Request) {
+func (app *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		// add "Allow: POST" header to response
 		w.Header().Set("Allow", "POST")
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		app.clientError(w, http.StatusMethodNotAllowed)
 	}
 	w.Write([]byte("this is the snippet create"))
 }
