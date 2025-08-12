@@ -32,8 +32,8 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	// execute the base template
 	err = ts.ExecuteTemplate(w, "base", nil)
 	if err != nil {
-		fmt.Print(err.Error())
 		app.serverError(w, err)
+		return
 	}
 }
 
@@ -50,10 +50,11 @@ func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
 
 // create a new snippet
 func (app *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodPost {
+	if r.Method != http.MethodPost {
 		// add "Allow: POST" header to response
 		w.Header().Set("Allow", "POST")
 		app.clientError(w, http.StatusMethodNotAllowed)
+		return
 	}
 	w.Write([]byte("this is the snippet create"))
 }
