@@ -1,29 +1,48 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 )
 
+type application struct {
+	errorLog *log.Logger
+	infoLog  *log.Logger
+}
+
 func main() {
-	// create new serveMux(router)
-	mux := http.NewServeMux()
+	// define addr command line flag
+	addr := flag.String("addr", ":4000", "http service address")
+	// parse the command line flag
+	flag.Parse()
 
-	fileServer := http.FileServer(customFileSystem{http.Dir("./static")})
-	// Strip the "/static" prefix so FileServer can find the right file
-	mux.Handle("/static/", http.StripPrefix("/static/", fileServer))
+	// create logger for info message
+	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
+	// create logger for error message
+	errorLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
 
-	// bind the url path to the handler func
-	mux.HandleFunc("/", home)
-	mux.HandleFunc("/snippet/view", snippetView)
-	mux.HandleFunc("/snippet/create", snippetCreate)
+	// instance of the application struct
+	app := &application{
+		errorLog: errorLog,
+		infoLog:  infoLog,
+	}
+
+	// Go HTTP server logs its own errors using the standard logger
+	// For consistency, we should make it use our errorLog so we manually create an http.Server struct and tell it to use errorLog
+	srv := &http.Server{
+		Addr:     *addr,
+		ErrorLog: errorLog,
+		Handler:  app.routes(),
+	}
 
 	// start the web server
-	log.Print("Listening on localhost:8000")
-	err := http.ListenAndServe(":8000", mux)
-	// if there is a error log it and stop the program
-	log.Fatal(err)
+	infoLog.Printf("Starting server on %s", *addr)
+	err := srv.ListenAndServe()
+	// if there is error log it and stop the program
+	errorLog.Fatal(err)
 
 }
 
